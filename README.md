@@ -60,3 +60,31 @@ The `list pathway` column represents as many columns as the pathways obtained fr
 1. Run the script with required arguments: `python fusion-infos.py -i infos-KEGG.csv -b birth-moment.csv`
 Replace the argument values with the actual paths to your input files.
 2. After the script finishes running, you will find the output file `allinfos-KEGG.csv` containing merged gene information.
+
+# STEP 4
+## Interaction Statistics Analysis
+
+The script `interactions-stats.R` performs interaction analysis on pathways, creates interaction graphs, and conducts various manipulations on interactions and sub-pathways. It requires the following input arguments:
+
+1. Path to the CSV file containing gene information including birth moments (`allinfos-KEGG.csv`).
+2. Path to the directory containing pathway information (`/paths/`).
+
+The script generates several PDF outputs:
+
+- `ggplot-generankbirthpath.pdf`: Contains gene positions and appearance moments in pathways.
+- `ggplot-distridelta.pdf`: Displays the distribution of deltas for each interaction.
+- `ggplot-distributiondirection.pdf`: Illustrates the distribution of interactions appearing forward, backward, or simultaneously.
+- `ggplot-distributionbirthrank.pdf`: Presents the distribution of gene appearance moments for each position.
+- `ggplot-distributiondelta.pdf`: Shows the distribution of birth deltas for each interaction.
+- `ggplot-distributionbirth.pdf`: Depicts the distribution of gene births by clades.
+
+### Prerequisites
+
+- R (with necessary packages installed)
+
+### Usage
+
+1. Run the R script with required arguments: `Rscript interactions-stats.R allinfos-KEGG.csv /paths/`
+Replace the argument values with the actual paths to your input files.
+2. After the script finishes running, you will find the generated PDF files in the same directory.
+
