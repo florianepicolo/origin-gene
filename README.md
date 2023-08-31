@@ -7,9 +7,9 @@ This script, `get-info-KEGG.py`, allows you to retrieve information about signal
 
 ### Prerequisites
 - Python 3.x
-- Packages: requests, pandas
+- Packages: requests, beautifulsoup4
 
-You can install the required packages using the following command: `pip install requests pandas`
+You can install the required packages using the following command: `pip install requests beautifulsoup4`
 
 ### Usage
 1. (optional) Open `get-info-KEGG.py` in a text editor. Modify the `keywords` variable on line 25 to specify your desired keywords.
