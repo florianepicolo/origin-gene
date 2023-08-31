@@ -18,9 +18,7 @@ You can install the required packages using the following command: `pip install 
 4. After the script finishes running, you will find two output files in the same directory:
 - `infos-KEGG.csv`: Contains pathway information (Pathway Name, Gene ID, UniProt ID, Ensembl ID, Gene Name).
 - `pathwaylist.txt`: Contains Ensembl IDs of genes associated with the selected pathway.
-
-### Example
-For instance, if you set the `keywords` to `"signaling pathway"`, the script will retrieve information related to signaling pathways. The resulting CSV file will contain columns like `Pathway Name`, `Gene ID`, `UniProt ID`, `Ensembl ID`, and `Gene Name`.
+- `\path\xxxx.xml`: Contains all pathway in xml format.
 
 # STEP 2
 ## Gene Birth Moment Determination
@@ -46,7 +44,19 @@ You can install the required package using the following command: `pip install b
 Replace the argument values with the actual paths to your input files.
 2. After the script finishes running, you will find the output file `birth-moment.csv` containing gene birth moment information.
 
+# STEP 3
+## Gene Information Fusion
 
+The script `fusion-infos.py` combines information from the two previous programs and generates an output file named `allinfos-KEGG.csv` with columns:
 
----
-Feel free to customize this README further to fit your project structure and any additional information you'd like to provide. Make sure to include any relevant licensing information, contributors, or contact details as needed.
+- ["kegg id", "entrezgene id", "uniprot id", "ensembl id", "gene name", "gene other name", "gene description", "birth clade", "num clade", "list pathway"]
+
+The `list pathway` column represents as many columns as the pathways obtained from the keywords in program 1. If the gene is present in a pathway, it will be marked with a "1" in the corresponding cell.
+
+### Prerequisites
+- Python 3.x
+
+### Usage
+1. Run the script with required arguments: `python fusion-infos.py -i infos-KEGG.csv -b birth-moment.csv`
+Replace the argument values with the actual paths to your input files.
+2. After the script finishes running, you will find the output file `allinfos-KEGG.csv` containing merged gene information.
