@@ -1,4 +1,4 @@
-# Stript to determine the birth moment of human genes
+# Determining the time of birth of human genes
 
 # STEP 1
 ## KEGG Pathway Information Retrieval
@@ -22,7 +22,29 @@ You can install the required packages using the following command: `pip install 
 ### Example
 For instance, if you set the `keywords` to `"signaling pathway"`, the script will retrieve information related to signaling pathways. The resulting CSV file will contain columns like `Pathway Name`, `Gene ID`, `UniProt ID`, `Ensembl ID`, and `Gene Name`.
 
+# STEP 2
+## Gene Birth Moment Determination
 
+The script `get-bith.py` helps determine the appearance timing of genes using Genomicus trees and orthology relationships. This second program requires several mandatory input files as arguments:
+
+- `-t`: Vertabrates tree (NHX file) -> Download from: [vertebrates tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus/109.01/protein_tree.nhx.bz2) (requires decompression)
+- `-m`: Metazoa tree (NHX file) -> Download from: [metazoa tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus-metazoa/51.01/protein_tree.nhx.bz2) (requires decompression)
+- `-l`: Interest gene list (TXT file) or the "pathwaylist.txt" obtained from the first program.
+- `-c`: Clades of species (CSV file) with [species, clade, clade number] information.
+- Optional: `-p`: Paralogue of interest gene list (TXT file)
+
+The second program generates an output file named `birth-moment.csv` with columns [Ensembl ID, Clade, Clade Number].
+
+### Prerequisites
+- Python 3.x
+- Packages: Biopython
+
+You can install the required package using the following command: `pip install biopython`
+
+### Usage
+1. Run the script with required and optional arguments: `python get-bith.py -t vertebrates_tree.nhx -m metazoa_tree.nhx -l pathwaylist.txt -c clades.csv`
+Replace the argument values with the actual paths to your input files.
+2. After the script finishes running, you will find the output file `birth-moment.csv` containing gene birth moment information.
 
 
 
