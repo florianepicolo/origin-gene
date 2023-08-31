@@ -1,4 +1,4 @@
-# birth-gene
+# Stript to determine the birth moment of human genes
 
 # STEP 1
 ## KEGG Pathway Information Retrieval
@@ -8,13 +8,15 @@ This script, `get-info-KEGG.py`, allows you to retrieve information about signal
 ### Prerequisites
 - Python 3.x
 - Packages: requests, pandas
+
 You can install the required packages using the following command: `pip install requests pandas`
 
 ### Usage
-1. (optional) Open `get-info-KEGG.py` in a text editor. Modify the `keywords` variable on line 25 to specify your desired keywords. 
+1. (optional) Open `get-info-KEGG.py` in a text editor. Modify the `keywords` variable on line 25 to specify your desired keywords.
+
 *For example, you can use keywords like `"signaling pathway"` or `"ovarian"`. Make sure to exclude `"multiples species"` as requested.*
-2. Run the script: `python get-info-KEGG.py`
-3. After the script finishes running, you will find two output files in the same directory:
+3. Run the script: `python get-info-KEGG.py`
+4. After the script finishes running, you will find two output files in the same directory:
 - `infos-KEGG.csv`: Contains pathway information (Pathway Name, Gene ID, UniProt ID, Ensembl ID, Gene Name).
 - `pathwaylist.txt`: Contains Ensembl IDs of genes associated with the selected pathway.
 
