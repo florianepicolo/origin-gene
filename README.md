@@ -30,7 +30,7 @@ The script `get-bith.py` helps determine the appearance timing of genes using Ge
 - `-t`: Vertabrates tree (NHX file) -> Download from: [vertebrates tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus/109.01/protein_tree.nhx.bz2) (requires decompression)
 - `-m`: Metazoa tree (NHX file) -> Download from: [metazoa tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus-metazoa/51.01/protein_tree.nhx.bz2) (requires decompression)
 - `-l`: Interest gene list (TXT file) or the "pathwaylist.txt" obtained from the first program.
-- `-c`: Clades of species (CSV file) with [species, clade, clade number] information.
+- `-c`: Clades of interest species (CSV file) with [species, clade, clade number] information.
 - Optional: `-p`: Paralogue of interest gene list (TXT file)
 
 The second program generates an output file named `birth-moment.csv` with columns [Ensembl ID, Clade, Clade Number].
