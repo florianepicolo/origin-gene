@@ -13,7 +13,6 @@ You can install the required packages using the following command: `pip install 
 
 ### Usage
 1. (optional) Open `get-info-KEGG.py` in a text editor. Modify the `keywords` variable on line 25 to specify your desired keywords.
-
 *For example, you can use keywords like `"signaling pathway"` or `"ovarian"`. Make sure to exclude `"multiples species"` as requested.*
 3. Run the script: `python get-info-KEGG.py`
 4. After the script finishes running, you will find two output files in the same directory:
