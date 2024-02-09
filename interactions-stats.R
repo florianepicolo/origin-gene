@@ -343,15 +343,15 @@ plot_relations <- function(df_relations){
   
   df_relations$dir <- factor(df_relations$direction, levels = c("backward", "simultaneous", "forward"))
   p_direction <- df_relations %>% drop_na() %>% 
-    select(dir, path) %>% group_by(path, dir) %>% summarise(n = n())  %>% group_by(path) %>%
-    mutate(percentage = n / sum(n) * 100) %>% filter(dir == "forward") %>% arrange(-percentage)  %>% pull(path)
+    select(dir, path) %>% group_by(path, dir) %>% dplyr::summarise(n = dplyr::n())  %>% group_by(path) %>%
+    dplyr::mutate(percentage = n / sum(n) * 100) %>% filter(dir == "forward") %>% arrange(-percentage)  %>% pull(path)
   
   p <- df_relations %>%
     drop_na() %>%
     group_by(path, dir) %>%
-    summarise(count = n()) %>%
+    dplyr::summarise(count = dplyr::n()) %>%
     group_by(path) %>%
-    mutate(percentage = count / sum(count) * 100) %>%
+    dplyr::mutate(percentage = count / sum(count) * 100) %>%
     ggplot(aes(x = percentage, y = factor(path, levels = p_direction), fill = dir)) +
     geom_bar(stat = "identity", position = "stack") +
     geom_text(aes(label = paste0(round(percentage), "%")), position = position_stack(vjust = 0.5), 
@@ -396,7 +396,7 @@ plot_distribirth <- function(df_genes){
   print(p)  
 } #figure ggplot-distributionbirth #figure 3
 plot_cumuldistribirth <- function(df_genes){
-  d <- df_genes_allpaths %>% drop_na() %>% mutate(nwclade = case_when(
+  d <- df_genes_allpaths %>% drop_na() %>% dplyr::mutate(nwclade = case_when(
     date %in% c(2, 3) ~ 2,
     date %in% c(4, 5, 6) ~ 4,
     date %in% c(7, 8) ~ 7,
@@ -417,9 +417,9 @@ plot_cumuldistribirth <- function(df_genes){
   color_palette <- paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25)
   p <- d %>% drop_na() %>% select(name, nwclade) %>% unique() %>% 
     group_by(nwclade) %>%
-    summarise(count_gene = n()) %>%
+    dplyr::summarise(count_gene = dplyr::n()) %>%
     arrange(nwclade) %>%
-    mutate(
+    dplyr::mutate(
       cumulative_count = cumsum(count_gene),
       cumulative_percentage = cumsum(count_gene) / sum(count_gene) * 100
     ) %>%
@@ -461,9 +461,9 @@ plot_cumuldistribirth <- function(df_genes){
 }
 plot_delta <- function(df_relations){
   p_delta <- df_relations %>% drop_na() %>% select(delta_age, pos_from, pos_to, path) %>% 
-    group_by(path, pos_from, pos_to) %>% unique() %>% count(delta_age)
-  p_median_delta <- p_delta %>% group_by(path) %>% summarise(median = median(delta_age)) %>% arrange(median) %>% pull(path)
-  p_delta <- p_delta %>% mutate(path = factor(path, levels=p_median_delta))
+    group_by(path, pos_from, pos_to) %>% unique() %>% dplyr::count(delta_age)
+  p_median_delta <- p_delta %>% group_by(path) %>% dplyr::summarise(median = median(delta_age)) %>% arrange(median) %>% pull(path)
+  p_delta <- p_delta %>% dplyr::mutate(path = factor(path, levels=p_median_delta))
   p <- p_delta %>% ggplot(.,  aes(x = delta_age, y = path)) +
     geom_boxplot() + labs(x = "delta", y = "path") +
     ggtitle("Distribution des deltas par path")
@@ -609,11 +609,11 @@ df_correlation$pvalue = as.numeric(df_correlation$pvalue)
 
 
 #### SAUVEGARDE ####
-save.image("session_top_07022024.RData")
-saveRDS(df_relations_allpaths, file = "df_relations_allpaths_07022024.rds")
-saveRDS(df_correlation, file = "df_correlation_07022024.rds")
-saveRDS(df_genes_allpaths, file = "df_genes_allpaths_07022024.rds")
-saveRDS(df_pvalue, file = "df_pvalue_07022024.rds")
+save.image("session_top_09022024.RData")
+saveRDS(df_relations_allpaths, file = "df_relations_allpaths_09022024.rds")
+saveRDS(df_correlation, file = "df_correlation_09022024.rds")
+saveRDS(df_genes_allpaths, file = "df_genes_allpaths_09022024.rds")
+saveRDS(df_pvalue, file = "df_pvalue_09022024.rds")
 
 #### INFOS GENES ####
 # somme des genes par clades pour l'ensemble des voies
@@ -647,11 +647,11 @@ t_sum_direction <- p_sum_direction %>% ungroup() %>% summarise(backward=sum(back
 
 ## Delta
 # petites recherches pour les deltas
-df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% mutate(label = paste(date_from,":", date_to, sep = "")) %>%
-  group_by(delta_age, label, date_from, date_to) %>% filter(path=="MAPK") %>% summarise(freq=n()) %>% filter(delta_age==0)
+df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% dplyr::mutate(label = paste(date_from,":", date_to, sep = "")) %>%
+  group_by(delta_age, label, date_from, date_to) %>% filter(path=="MAPK") %>% dplyr::summarise(freq=dplyr::n()) %>% filter(delta_age==0)
 # somme de chaque delta
-df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% mutate(label = paste(date_from,":", date_to, sep = "")) %>% 
-  group_by(delta_age, label, date_from, date_to) %>% filter(path=="MAPK") %>% count(delta_age)
+df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% dplyr::mutate(label = paste(date_from,":", date_to, sep = "")) %>% 
+  group_by(delta_age, label, date_from, date_to) %>% filter(path=="MAPK") %>% dplyr::count(delta_age)
 
 ## Permutations
 # on va regarder si les tailles des clusters respectant une condition sont du à l'aléatoire ou non : 
