@@ -468,9 +468,12 @@ plot_delta <- function(df_relations){
   p_delta <- p_delta %>% dplyr::mutate(path = factor(path, levels=p_median_delta))
   p <- p_delta %>% ggplot(.,  aes(x = delta_age, y = path)) +
     geom_boxplot() + labs(x = "delta", y = "path") +
-    ggtitle("Distribution des deltas par path")
+    ggtitle("Distribution des deltas par path") +
+    scale_x_continuous(breaks = seq(-25, 25, by = 5)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "red")
   plot(p)
   tab_plot <- layer_data(p) %>% select(xmin, xlower, xmiddle, xupper, xmax) 
+  tab_plot$path <- rep(p_median_delta, length.out = nrow(tab_plot))
   return(tab_plot)
 } #figure ggplot-distributiondelta
 plot_distrirankbirth <- function(df_genes){
