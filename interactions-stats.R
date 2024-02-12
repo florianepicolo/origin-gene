@@ -388,7 +388,8 @@ plot_distribirth <- function(df_genes){
              "Amniota", "Mammalia", "Theria")
   )
   new_date_clade$label <- paste(new_date_clade$name, " (", new_date_clade$age, "My)", sep = "")
-  p <- d %>% drop_na() %>% select(name, nwclade) %>% unique() %>%
+  p <- d %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>%
+    drop_na() %>% select(name, nwclade) %>% unique() %>%
     ggplot(., aes(x=factor(nwclade))) + geom_bar(position="stack") +
     labs(x = "birth clade", y = "number of gene") + ggtitle("Distribution of birth gene") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0)) +
@@ -415,7 +416,8 @@ plot_cumuldistribirth <- function(df_genes){
   new_date_clade$label <- paste(new_date_clade$name, " (", new_date_clade$age, "My)", sep = "")
   
   color_palette <- paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25)
-  p <- d %>% drop_na() %>% select(name, nwclade) %>% unique() %>% 
+  p <- d %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>%
+    drop_na() %>% select(name, nwclade) %>% unique() %>% 
     group_by(nwclade) %>%
     dplyr::summarise(count_gene = dplyr::n()) %>%
     arrange(nwclade) %>%
@@ -506,7 +508,7 @@ files_paths <- dir(doss_paths) # récupère tous les fichiers d'un dossier
 
 
 #### INITIALISATION ####
-# load("session_afterJAKSTAT")
+load("session_top_10022024.RData")
 npermut = 1000
 conditions <- c(function(x){x[1]>=x[2]}, function(x){x[1]>x[2]}, function(x){x[1]==x[2]}, function(x){x[1]<x[2]}, function(x){x[1]<=x[2]})
 df_pvalue = data.frame(matrix(NA, nrow = length(files_paths), ncol = 1+length(conditions)*3))
@@ -609,15 +611,16 @@ df_correlation$pvalue = as.numeric(df_correlation$pvalue)
 
 
 #### SAUVEGARDE ####
-save.image("session_top_09022024.RData")
-saveRDS(df_relations_allpaths, file = "df_relations_allpaths_09022024.rds")
-saveRDS(df_correlation, file = "df_correlation_09022024.rds")
-saveRDS(df_genes_allpaths, file = "df_genes_allpaths_09022024.rds")
-saveRDS(df_pvalue, file = "df_pvalue_09022024.rds")
+# save.image("session_top_10022024.RData")
+# saveRDS(df_relations_allpaths, file = "df_relations_allpaths_09022024.rds")
+# saveRDS(df_correlation, file = "df_correlation_09022024.rds")
+# saveRDS(df_genes_allpaths, file = "df_genes_allpaths_09022024.rds")
+# saveRDS(df_pvalue, file = "df_pvalue_09022024.rds")
 
 #### INFOS GENES ####
-# somme des genes par clades pour l'ensemble des voies
-t_gene_by_date <- df_genes_allpaths %>% drop_na() %>% select(name, date) %>% unique() %>% group_by(date) %>% dplyr::summarise(n = dplyr::n()) %>% arrange(-n)
+# somme des genes par clades pour l'ensemble des voies # infos avec figure 3
+# t_gene_by_date <- df_genes_allpaths %>% ungroup %>% drop_na() %>% select(name, date) %>% unique() %>% group_by(date) %>% dplyr::summarise(n = dplyr::n()) %>% arrange(-n)
+t_gene_by_date <- df_genes_allpaths %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>% drop_na() %>% ungroup() %>% select(name, date, -ids) %>% unique() %>% group_by(date) %>% dplyr::summarise(n = dplyr::n()) %>% arrange(date)
 # somme des gènes par clades par voie
 p_gene_by_date <- df_genes_allpaths %>% drop_na() %>% select(name, date, path) %>% unique() %>% group_by(path, date) %>% dplyr::summarise(n = dplyr::n()) %>% arrange(-n)
 
@@ -625,10 +628,11 @@ p_gene_by_date <- df_genes_allpaths %>% drop_na() %>% select(name, date, path) %
 # test du chi2 pour montrer que les gènes impliqués dans l'immunité sont arrivés + après le clade des vertébrés
 list_immun_path <- c("B cell receptor", "C type.lectin receptor", "Chemokine", "FC epsilon RI", "IL 17", 
                 "NOD like receptor", "RIG I like receptor", "T cell receptor", "Toll like receptor")
-chi2_immune <- df_genes_allpaths %>% drop_na() %>% select(name, date, path) %>% 
+chi2_immune <- df_genes_allpaths %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>% drop_na() %>% select(name, date, path) %>% 
   dplyr::mutate(immune = ifelse(path %in% list_immun_path, "yes", "no"), vertebrate = ifelse(date >= 12, "yes", "no")) %>% 
-  group_by(immune, vertebrate) %>% dplyr::summarise(n = dplyr::n()) %>% xtabs(n ~ immune + vertebrate, .) %>% chisq.test(.)
-# ça pourrait être intéressant de les ajouter à notre graph plot_distribirth() en line ? 
+  select(name, immune, vertebrate) %>% unique() %>% group_by(immune, vertebrate) %>% dplyr::summarise(n = dplyr::n()) %>% 
+  xtabs(n ~ immune + vertebrate, .) %>% chisq.test(.)
+## peut encore être améliorer ?? là plusieurs voies qui sont immune et non sont comptées 2 fois.
 
 # Couleurs pour KEGG
 df_color <- df_genes_allpaths %>% mutate(color = palette$color[match(date, palette$clade)], 
@@ -638,10 +642,33 @@ df_color <- df_genes_allpaths %>% mutate(color = palette$color[match(date, palet
 #### INFOS RELATIONS ####
 ## Direction (forward, backward, simultaneous)
 # somme des directions par voie
-p_sum_direction <- df_relations_allpaths %>% drop_na() %>% group_by(path) %>% dplyr::count(direction) %>% pivot_wider(names_from = direction, values_from = n)
+p_sum_direction <- df_relations_allpaths %>% ungroup %>% drop_na() %>% group_by(path) %>% dplyr::count(direction) %>% 
+  pivot_wider(names_from = direction, values_from = n)
 # somme des directions toute voie confondue
-t_sum_direction <- p_sum_direction %>% ungroup() %>% summarise(backward=sum(backward), forward=sum(forward), simultaneous=sum(simultaneous))
+t_sum_direction <- df_relations_allpaths %>% ungroup() %>% drop_na() %>% select(name_from, name_to, direction) %>% 
+  unique() %>% dplyr::count(direction) %>% pivot_wider(names_from = direction, values_from = n)
 
+# permet d'identifier les problèmes de direction : 
+df_diff_directions <- df_relations_allpaths %>% drop_na() %>%
+  group_by(name_from, name_to) %>% dplyr::summarise(n_directions = n_distinct(direction)) %>%
+  filter(n_directions > 1) %>% ungroup()
+df_relations_diff <- df_relations_allpaths %>% semi_join(df_diff_directions, by = c("name_from", "name_to")) %>% 
+  ungroup() %>% select(name_from, name_to, date_from, date_to, delta_age, direction, path) %>% arrange(name_from)
+
+## réparer les bêtises pour les mauvaises directions le temps de voir ce qui ne fonctionne pas avant
+calc_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+df_mode_dates <- df_relations_allpaths %>% group_by(name_from, name_to) %>%
+  summarise(date_from_mode = calc_mode(date_from), date_to_mode = calc_mode(date_to), .groups = 'drop')
+df_relations_with_modes <- df_relations_allpaths %>% left_join(df_mode_dates, by = c("name_from", "name_to")) %>% 
+  select(-date_from, -date_to, -direction, -delta_age) %>% rename(date_from = date_from_mode, date_to = date_to_mode) %>% 
+  mutate(delta_age = date_from-date_to, 
+         direction = ifelse(delta_age>0, "forward", ifelse(delta_age<0, "backward", "simultaneous")))
+
+## puis remplacer les p_sum_dir et t_sum_dir. 
+df_relations_allpaths <- df_relations_with_modes
 # ici il faudra faire un chisq.test() entre les % des directions brute et celles des permutées. 
 
 
