@@ -1,5 +1,8 @@
 # Determining the time of birth of human genes
 
+Welcome to our pathway analysis toolkit! This repository contains a set of scripts tailored to streamline the retrieval, analysis, and manipulation of biological signaling pathways from the KEGG database. These scripts enable to efficiently gather pathway information, determine gene appearance timing, and conduct interaction analysis. 
+
+
 # STEP 1
 ## KEGG Pathway Information Retrieval
 
