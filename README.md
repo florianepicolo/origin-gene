@@ -43,7 +43,7 @@ The second program generates an output file named `birth-moment.csv` with column
 You can install the required package using the following command: `pip install biopython`
 
 ### Usage
-1. Run the script with required and optional arguments: `python get-bith.py -t vertebrates_tree.nhx -m metazoa_tree.nhx -l pathwaylist.txt -c clades.csv`
+1. Run the script with required and optional arguments: `python get-birth.py -t vertebrates_tree.nhx -m metazoa_tree.nhx -l pathwaylist.txt -c clades.csv`
 Replace the argument values with the actual paths to your input files.
 2. After the script finishes running, you will find the output file `birth-moment.csv` containing gene birth moment information.
 
