@@ -66,7 +66,7 @@ def get_clade(filename, dico):
 
 def write_csv(out_file, dico, listpath):
     spamwriter = csv.writer(open(out_file, "w"), delimiter=';', quoting=csv.QUOTE_NONE, quotechar='"', escapechar='')
-    fields = ["kegg_id", "entrezgene_id", "uniprot_id", "ensembl_id", "gene_name", "gene_other_name", "gene_description", "birth_clade", "num_clade"]
+    fields = ["kegg_id", "entrezgene_id", "uniprot_id", "ensembl_id", "gene_name", "gene_other_name", "gene_description", "origin_clade", "num_clade"]
     [fields.append(path) for path in listpath]   
 
     spamwriter.writerow(fields)
