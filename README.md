@@ -1,4 +1,4 @@
-# Determining the time of birth of human genes
+# Determining the origin of human genes
 
 Welcome to our pathway analysis toolkit! This repository contains a set of scripts tailored to streamline the retrieval, analysis, and manipulation of biological signaling pathways from the KEGG database. These scripts enable to efficiently gather pathway information, determine gene appearance timing, and conduct interaction analysis. 
 
@@ -24,17 +24,17 @@ You can install the required packages using the following command: `pip install 
 - `\path\xxxx.xml`: Contains all pathway in xml format.
 
 # STEP 2
-## Gene Birth Moment Determination
+## Gene Origin Moment Determination
 
-The script `get-birth.py` helps determine the appearance timing of genes using Genomicus trees and orthology relationships. This second program requires several mandatory input files as arguments:
+The script `get-origin.py` helps determine the appearance timing of genes using Genomicus trees and orthology relationships. This second program requires several mandatory input files as arguments:
 
 - `-t`: Vertabrates tree (NHX file) -> Download from: [vertebrates tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus/109.01/protein_tree.nhx.bz2) (requires decompression)
 - `-m`: Metazoa tree (NHX file) -> Download from: [metazoa tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus-metazoa/51.01/protein_tree.nhx.bz2) (requires decompression)
-- `-l`: Interest gene list (TXT file) or the "pathwaylist.txt" obtained from the first program.
+- `-l`: Interest gene list (TXT file) or the `pathwaylist.txt` obtained from the first program.
 - `-c`: Clades of interest species (CSV file) with [species, clade, clade number] information.
 - Optional: `-p`: Paralogue of interest gene list (TXT file)
 
-The second program generates an output file named `birth-moment.csv` with columns [Ensembl ID, Clade, Clade Number].
+The second program generates an output file named `origin-moment.csv` with columns [Ensembl ID, Clade, Clade Number].
 
 ### Prerequisites
 - Python 3.x
@@ -43,16 +43,16 @@ The second program generates an output file named `birth-moment.csv` with column
 You can install the required package using the following command: `pip install biopython`
 
 ### Usage
-1. Run the script with required and optional arguments: `python get-birth.py -t vertebrates_tree.nhx -m metazoa_tree.nhx -l pathwaylist.txt -c clades.csv`
+1. Run the script with required and optional arguments: `python get-origin.py -t vertebrates_tree.nhx -m metazoa_tree.nhx -l pathwaylist.txt -c clades.csv`
 Replace the argument values with the actual paths to your input files.
-2. After the script finishes running, you will find the output file `birth-moment.csv` containing gene birth moment information.
+2. After the script finishes running, you will find the output file `origin-moment.csv` containing gene birth moment information.
 
 # STEP 3
 ## Gene Information Fusion
 
 The script `fusion-infos.py` combines information from the two previous programs and generates an output file named `allinfos-KEGG.csv` with columns:
 
-- ["kegg id", "entrezgene id", "uniprot id", "ensembl id", "gene name", "gene other name", "gene description", "birth clade", "num clade", "list pathway"]
+- ["kegg id", "entrezgene id", "uniprot id", "ensembl id", "gene name", "gene other name", "gene description", "origin clade", "num clade", "list pathway"]
 
 The `list pathway` column represents as many columns as the pathways obtained from the keywords in program 1. If the gene is present in a pathway, it will be marked with a "1" in the corresponding cell.
 
@@ -60,7 +60,7 @@ The `list pathway` column represents as many columns as the pathways obtained fr
 - Python 3.x
 
 ### Usage
-1. Run the script with required arguments: `python fusion-infos.py -i infos-KEGG.csv -b birth-moment.csv`
+1. Run the script with required arguments: `python fusion-infos.py -i infos-KEGG.csv -b origin-moment.csv`
 Replace the argument values with the actual paths to your input files.
 2. After the script finishes running, you will find the output file `allinfos-KEGG.csv` containing merged gene information.
 
@@ -74,12 +74,12 @@ The script `interactions-stats.R` performs interaction analysis on pathways, cre
 
 The script generates several PDF outputs:
 
-- `ggplot-generankbirthpath.pdf`: Contains gene positions and appearance moments in pathways.
+- `ggplot-genepositionoriginpath.pdf`: Contains gene positions and appearance moments in pathways.
 - `ggplot-distridelta.pdf`: Displays the distribution of deltas for each interaction.
 - `ggplot-distributiondirection.pdf`: Illustrates the distribution of interactions appearing forward, backward, or simultaneously.
-- `ggplot-distributionbirthrank.pdf`: Presents the distribution of gene appearance moments for each position.
-- `ggplot-distributiondelta.pdf`: Shows the distribution of birth deltas for each interaction.
-- `ggplot-distributionbirth.pdf`: Depicts the distribution of gene births by clades.
+- `ggplot-distributionoriginposititons.pdf`: Presents the distribution of gene appearance moments for each position.
+- `ggplot-distributiondelta.pdf`: Shows the distribution of origin deltas for each interaction.
+- `ggplot-distributionorigin.pdf`: Depicts the distribution of gene origins by clades.
 
 ### Prerequisites
 
