@@ -173,7 +173,7 @@ if __name__ == "__main__":
     f_paralogue = args.paralogues       # f_paralogue = "paralogues-v109.txt"
 
     # of_nbortho = "out_nbortho.csv"
-    of_birth = "out_birthmoment.csv"
+    of_birth = "out_originmoment.csv"
 
     ## on récupère les différentes listes
     l_interest = recuperation_listgene(infile=f_interest)
