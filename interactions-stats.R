@@ -330,7 +330,7 @@ plot_posids <- function(df_genes, name_path){
   p <- df_genes %>% drop_na() %>% filter(path == name_path) %>% group_by(ids, name, pos, date) %>% dplyr::summarise(n=n(), min_rank=min(pos), max_rank=max(pos)) %>% 
     arrange(min_rank, max_rank, -n, ids) %>%  mutate(ids=factor(name, levels=name %>% unique())) %>% 
     ggplot(aes(x= reorder(ids, max_rank), y=pos, size=n, col=factor(date, levels=1:25))) + geom_point() +
-    theme(axis.text.x = element_text(angle=90)) + ggtitle(name_path) + labs(x = "gene name", y = "rank", col= "birth", size = "n") +
+    theme(axis.text.x = element_text(angle=90)) + ggtitle(name_path) + labs(x = "gene name", y = "pathway position", col= "branch of origin", size = "n") +
     scale_color_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), drop = FALSE)
   print(p)
 } # figure ggplot-generankbirthpath
@@ -359,7 +359,7 @@ plot_relations <- function(df_relations){
     scale_fill_manual(values = c("backward" = "#66C2A5", "simultaneous" = "#FDAE61", "forward" = "#E6F598"), 
                       breaks = c("backward", "simultaneous", "forward")) +
     theme_minimal() +
-    ggtitle("distribution of direction of interaction by pathway (%)") +
+    ggtitle("Distribution of direction of interaction by pathway (%)") +
     labs(x = "percentage of direction of interaction", y = "path", fill="direction")
 
   print(p)
@@ -391,7 +391,7 @@ plot_distribirth <- function(df_genes){
   p <- d %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>%
     drop_na() %>% select(name, nwclade) %>% unique() %>%
     ggplot(., aes(x=factor(nwclade))) + geom_bar(position="stack") +
-    labs(x = "birth clade", y = "number of gene") + ggtitle("Distribution of birth gene") +
+    labs(x = "branch of origin", y = "number of gene") + ggtitle("Distribution of gene") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0)) +
     scale_x_discrete(labels = new_date_clade$label, drop = FALSE)
   print(p)  
@@ -437,9 +437,9 @@ plot_cumuldistribirth <- function(df_genes){
       vjust = -0.5, size = 3, color = "black"
     ) +
     labs(
-      x = "birth clade", 
+      x = "branch of origin", 
       y = "number of gene / cumulative percentage of gene", 
-      title = "distribution of birth gene (cumulative percentage and raw data)"
+      title = "Distribution of birth gene (cumulative percentage and raw data)"
     ) +
     scale_fill_gradientn(colours = color_palette, name = "Ajout", guide = "none") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0)) +
@@ -485,8 +485,8 @@ plot_distrirankbirth <- function(df_genes){
     theme_void() +
     facet_grid(path ~ pos, switch = "both") +
     theme(strip.text.y.left = element_text(angle = 0, hjust = 1, vjust = 0)) +
-    labs(x = "path", y = "rank", fill = "birth") +
-    ggtitle("Distribution of birth moments by path and rank")
+    labs(x = "path", y = "pathway position", fill = "branch of origin") +
+    ggtitle("Distribution of branch of origin by path and pathway position")
   print(p)
 } #figure ggplot-distributionbirthrank
 plot_distribirthdelta <- function(df_relations, name_path){
@@ -495,8 +495,8 @@ plot_distribirthdelta <- function(df_relations, name_path){
     ggplot(., aes(delta_age, freq, fill = factor(date_from, levels=1:25))) +
     geom_bar(position = "stack", stat = "identity") + theme_minimal() +
     scale_fill_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), drop = FALSE) + 
-    labs(x = "delta", y = "distribution of birth", fill = "birth") +
-    ggtitle(paste("Distribution of birth moments by delta for", name_path))
+    labs(x = "delta", y = "distribution of branch of origin", fill = "branch of origin") +
+    ggtitle(paste("Distribution of branch of origin by delta for", name_path))
   print(p)
 } #figure ggplot-distridelta
 
@@ -511,7 +511,6 @@ files_paths <- dir(doss_paths) # récupère tous les fichiers d'un dossier
 
 
 #### INITIALISATION ####
-load("session_top_10022024.RData")
 npermut = 1000
 conditions <- c(function(x){x[1]>=x[2]}, function(x){x[1]>x[2]}, function(x){x[1]==x[2]}, function(x){x[1]<x[2]}, function(x){x[1]<=x[2]})
 df_pvalue = data.frame(matrix(NA, nrow = length(files_paths), ncol = 1+length(conditions)*3))
@@ -614,11 +613,7 @@ df_correlation$pvalue = as.numeric(df_correlation$pvalue)
 
 
 #### SAUVEGARDE ####
-# save.image("session_top_10022024.RData")
-# saveRDS(df_relations_allpaths, file = "df_relations_allpaths_09022024.rds")
-# saveRDS(df_correlation, file = "df_correlation_09022024.rds")
-# saveRDS(df_genes_allpaths, file = "df_genes_allpaths_09022024.rds")
-# saveRDS(df_pvalue, file = "df_pvalue_09022024.rds")
+# save.image("session.RData")
 
 #### INFOS GENES ####
 # somme des genes par clades pour l'ensemble des voies # infos avec figure 3
