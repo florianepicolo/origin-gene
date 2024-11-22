@@ -1,4 +1,4 @@
-# Determining the origin of human genes
+# Determining the age of human genes
 
 Welcome to our pathway analysis toolkit! This repository contains a set of scripts tailored to streamline the retrieval, analysis, and manipulation of biological signaling pathways from the KEGG database. These scripts enable to efficiently gather pathway information, determine gene appearance timing, and conduct interaction analysis. 
 
@@ -24,9 +24,9 @@ You can install the required packages using the following command: `pip install 
 - `\path\xxxx.xml`: Contains all pathway in xml format.
 
 # STEP 2
-## Gene Origin Moment Determination
+## Gene Age Moment Determination
 
-The script `get-origin.py` helps determine the appearance timing of genes using Genomicus trees and orthology relationships. This second program requires several mandatory input files as arguments:
+The script `get-age.py` helps determine the appearance timing of genes using Genomicus trees and orthology relationships. This second program requires several mandatory input files as arguments:
 
 - `-t`: Vertabrates tree (NHX file) -> Download from: [vertebrates tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus/109.01/protein_tree.nhx.bz2) (requires decompression)
 - `-m`: Metazoa tree (NHX file) -> Download from: [metazoa tree NHX](https://ftp.bio.ens.psl.eu/pub/dyogen/genomicus-metazoa/51.01/protein_tree.nhx.bz2) (requires decompression)
@@ -78,8 +78,8 @@ The script generates several PDF outputs:
 - `ggplot-distridelta.pdf`: Displays the distribution of deltas for each interaction.
 - `ggplot-distributiondirection.pdf`: Illustrates the distribution of interactions appearing forward, backward, or simultaneously.
 - `ggplot-distributionoriginposititons.pdf`: Presents the distribution of gene appearance moments for each position.
-- `ggplot-distributiondelta.pdf`: Shows the distribution of origin deltas for each interaction.
-- `ggplot-distributionorigin.pdf`: Depicts the distribution of gene origins by clades.
+- `ggplot-distributiondelta.pdf`: Shows the distribution of age deltas for each interaction.
+- `ggplot-distributionorigin.pdf`: Depicts the distribution of gene ages by clades.
 
 ### Prerequisites
 
