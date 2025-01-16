@@ -37,7 +37,7 @@ recup_networks <- function(fxml){
   
   # items id and names (hsa) #récupérer tous les noms de chaque gène
   items_names <- list() 
-  for(i in 1:length(names)){items_names[i] <- strsplit(names[i], " ")[[1]]} # un seul crochet si on récupère tout # récupérer les différents nom des gènes
+  for(i in 1:length(names)){items_names[[i]] <- unlist(strsplit(names[i], "\\s+"))[1]} # un seul crochet si on récupère tout # récupérer les différents nom des gènes
   
   # les ids voies et leur noms (gestions des étiquettes avec des noms multiples)
   names(items_names) <- ids  # mettre l'id en face du nom
@@ -81,6 +81,24 @@ set_ages <- function(GRN){
       GRN$items$times[j] = max(result$num_clade)
     }
   }
+  
+  GRN$items <- GRN$items %>% dplyr::mutate(times = case_when(
+    times %in% c(2, 3) ~ 2,
+    times %in% c(4, 5, 6) ~ 3,
+    times %in% c(7, 8) ~ 4,
+    times %in% c(9) ~ 5,
+    times %in% c(10) ~ 6,
+    times %in% c(11) ~ 7,
+    times %in% c(12, 13) ~ 8,
+    times %in% c(14) ~ 9,
+    times %in% c(15) ~ 10,
+    times %in% c(16) ~ 11,
+    times %in% c(17) ~ 12,
+    times %in% c(18, 19, 20, 21, 22) ~ 13,
+    times %in% c(23) ~ 14,
+    times %in% c(24, 25) ~ 15,
+    TRUE ~ times))
+  
   return(GRN)
 }
 extract_first_element <- function(x) {unlist(strsplit(x, " "))[1]}
@@ -99,17 +117,9 @@ set_names <- function(GRN){
 }
 visual_graph <- function(GRN){
   graph <- graph_from_data_frame(GRN[[2]], directed=TRUE, vertices=GRN[[1]])
-  # V(graph)$label <- GRN$items$gene_name
   times_palette = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25)
   times_colors = times_palette[GRN$items$times]
-  # plot(graph,
-  #      layout = layout_as_tree(graph, circular = TRUE),
-  #      vertex.label.cex = 0.8,  # Taille du texte
-  #      vertex.size = 10,        # Taille des nœuds
-  #      vertex.label.font = 2,   # Épaisseur de la police des étiquettes
-  #      edge.arrow.size = 0.5,    # Taille des flèches des arêtes pour les graphes dirigés
-  #      vertex.color = times_colors   # Utiliser les couleurs définies pour les nœuds
-  # )
+  
   plot(graph,
        layout = layout_with_fr(graph),
        vertex.label.cex = 0.8,  # Taille du texte
@@ -118,23 +128,6 @@ visual_graph <- function(GRN){
        edge.arrow.size = 0.5,    # Taille des flèches des arêtes pour les graphes dirigés
        vertex.color = times_colors   # Utiliser les couleurs définies pour les nœuds
   )
-  # plot(graph,
-  #      layout = layout_as_tree(graph),
-  #      vertex.label.cex = 0.8,  # Taille du texte
-  #      vertex.size = 10,        # Taille des nœuds
-  #      vertex.label.font = 1,   # Épaisseur de la police des étiquettes
-  #      edge.arrow.size = 0.5,    # Taille des flèches des arêtes pour les graphes dirigés
-  #      vertex.color = times_colors
-  # )
-  # plot(graph,
-  #      layout = layout_with_kk(graph),
-  #      vertex.label.cex = 0.8,  # Taille du texte
-  #      vertex.size = 10,        # Taille des nœuds
-  #      vertex.label.font = 2,   # Épaisseur de la police des étiquettes
-  #      edge.arrow.size = 0.5,    # Taille des flèches des arêtes pour les graphes dirigés
-  #      vertex.color = times_colors   # Utiliser les couleurs définies pour les nœuds
-  # )
-
 }
 is_included <- function(path, other_paths) {
   for (other_path in other_paths) {
@@ -149,15 +142,12 @@ get_subgraph <- function(GRN){
   subgraphs <- Filter(function(subgraph) { vcount(subgraph) > 1 }, decompose(graph)) # on sort l'ensemble des sous-graph de plus d'un noeud du graph
   
   interactions <- get.edgelist(graph)
-  df_interactions <- data.frame(
-    from = interactions[,1],                 # premier élément
-    to = interactions[,2]                    # deuxième élement
-  ) %>% # merge(., degrees[, c("ids", "degree_out")], by.x = "from", by.y = "ids", all.x = TRUE)  %>%
+  df_interactions <- data.frame(from = interactions[,1],                 # premier élément
+                                to = interactions[,2] ) %>%              # deuxième élement
     mutate(positions = NA, delta_age = NA, direction = NA) 
   
   for (subgraph in subgraphs){
     up_node <- which(degree(subgraph, mode = "in") == 0 & degree(subgraph, mode = "out") > 0) # on récupère l'ensemble des noeuds de début de voie 
-    # down_node <- which(degree(subgraph, mode = "in") > 0 & degree(subgraph, mode = "out") == 0)
     for (node in up_node){
       # node = 19
       all_paths <- all_simple_paths(subgraph, from = node, to = V(subgraph), mode = "out") # on récupère toutes les sous-voies commençant par un noeud spécifique (début de voie)
@@ -177,17 +167,16 @@ get_subgraph <- function(GRN){
             new_row <- data.frame(
               from = from,
               to = to,
-              # degree_out = degrees$degree_out[degrees$ids==from],
               positions = position_in_path,  # nouvelle position
               delta_age = GRN$items$times[GRN$items$ids == to] - GRN$items$times[GRN$items$ids == from],
-              direction = ifelse((GRN$items$times[GRN$items$ids == to] - GRN$items$times[GRN$items$ids == from]) > 0, "backward", ifelse((GRN$items$times[GRN$items$ids == to] - GRN$items$times[GRN$items$ids == from]) < 0, "forward", "simultaneous"))
+              direction = ifelse((GRN$items$times[GRN$items$ids == to] - GRN$items$times[GRN$items$ids == from]) > 0, "forward", ifelse((GRN$items$times[GRN$items$ids == to] - GRN$items$times[GRN$items$ids == from]) < 0, "backward", "simultaneous"))
             )
             df_interactions <- rbind(df_interactions, new_row)
 
           }else{
             # on fait delta de l'age de B - A
             df_interactions$delta_age[relation] = GRN$items$times[GRN$items$ids==to] - GRN$items$times[GRN$items$ids==from]
-            df_interactions$direction[relation] = ifelse(df_interactions$delta_age[relation]>0, "backward", ifelse(df_interactions$delta_age[relation]<0, "forward", "simultaneous"))
+            df_interactions$direction[relation] = ifelse(df_interactions$delta_age[relation]>0, "forward", ifelse(df_interactions$delta_age[relation]<0, "backward", "simultaneous"))
             
             df_interactions$positions[relation] = position_in_path
           }
@@ -197,7 +186,8 @@ get_subgraph <- function(GRN){
     }
   }
   df_interactions <- distinct(df_interactions)
-  df_interactions <- df_interactions %>% group_by(from) %>% dplyr::mutate(weights = dplyr::n()) 
+  df_interactions <- df_interactions %>% group_by(from) %>% dplyr::mutate(weights = n_distinct(positions)) 
+  
   return(df_interactions)
 }
 wtd.cor <-function(x,y,weights){
@@ -269,7 +259,7 @@ get_degrees <- function(GRN){
 pvalue_comp <- function(x, distrib, tail=c("one", "two")){ 
   # x = la moyenne de nos tailles de cluster de données brutes
   pvalue <- NA
-  med <- median(distrib, na.rm=T) # médiane de la distribution des 1000 permutations
+  med <- median(distrib, na.rm = TRUE) # médiane de la distribution des 1000 permutations
   if(med>x) { # si med > x, le tail one va être différents ! 
     if(tail=="one"){
       pvalue <- (length(which(distrib<x))+1)/length(distrib) # pvalue = nombre de fois ou la distribution est inférieur à x et on divise ça par la longuuer des simulations qu'on a fait
@@ -310,41 +300,32 @@ subgraphs_given_times_condition <- function (GRN, condition) {
     if (sum(edges_cond)>0){
       suba <- subgraph.edges(tempg , E(tempg)[edges_cond]) # on extrait les sous graph qu'on traite dont les relations en filtrant les relations de manière à ce qu'elle valide la condition. 
       all_components <- c(all_components, components(suba)$csize) # et la je concatène pr chaque graph avec la taille de la composante de subnaf, on a une distri des longuuers de subgraph
-      # plot(suba,
-      #      layout = layout_with_fr(suba),
-      #      vertex.label.cex = 0.8,  # Taille du texte
-      #      vertex.size = 10,        # Taille des nœuds
-      #      vertex.label.font = 2,   # Épaisseur de la police des étiquettes
-      #      edge.arrow.size = 0.5,    # Taille des flèches des arêtes pour les graphes dirigés
-      #      vertex.color = components(suba)$membership   # Utiliser les couleurs définies pour les nœuds
-      # )
     }else{all_components <- c(all_components, 0)}
   }
   all_components <- all_components[-1] # on vire les NA au fur et à mesure comme on les a ajouté au début
   mean_distri = mean(all_components)
   return(mean_distri) # on sort une lsite de taille de subgrapph qui respecte la condition donné
 }
+calc_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+} # calcul de la valeur la plus haute parmis les valeurs les plus fréquentes
 
-#### PLOTS ####
+#### PLOTS #### 
 plot_posids <- function(df_genes, name_path){
   p <- df_genes %>% drop_na() %>% filter(path == name_path) %>% group_by(ids, name, pos, date) %>% dplyr::summarise(n=n(), min_rank=min(pos), max_rank=max(pos)) %>% 
     arrange(min_rank, max_rank, -n, ids) %>%  mutate(ids=factor(name, levels=name %>% unique())) %>% 
-    ggplot(aes(x= reorder(ids, max_rank), y=pos, size=n, col=factor(date, levels=1:25))) + geom_point() +
-    theme(axis.text.x = element_text(angle=90)) + ggtitle(name_path) + labs(x = "gene name", y = "pathway position", col= "branch of origin", size = "n") +
-    scale_color_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), drop = FALSE)
-  print(p)
+    ggplot(aes(x= reorder(ids, max_rank), y=pos, size=n, col=factor(date, levels=1:15))) + geom_point() +
+    theme(axis.text.x = element_text(angle=90)) + ggtitle(name_path) + labs(x = "gene name", y = "pathway posititon", col= "branch of origin", size = "n") +
+    scale_color_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 15), drop = FALSE)
+  # print(p)
+  plot(p, main = paste("figure", name_path))
 } # figure ggplot-generankbirthpath
 plot_relations <- function(df_relations){
-  # p <- df_relations %>% drop_na() %>% group_by(path) %>% count(direction) %>% ungroup() %>% ggplot(., aes(x=n, y=path, fill=direction)) + geom_bar(stat = "identity") +
-  #   scale_fill_manual(values = c("#66C2A5","#E6F598", "#FDAE61")) + theme_minimal() +
-  #   ggtitle("Distribution of direction of interaction by pathway") +
-  #   labs(x = "number of interactions", y = "pathway")
-  # 
-  
-  df_relations$dir <- factor(df_relations$direction, levels = c("backward", "simultaneous", "forward"))
-  p_direction <- df_relations %>% drop_na() %>% 
+  df_relations$dir <- factor(df_relations$direction, levels = c("forward", "simultaneous", "backward"))
+  p_direction <- df_relations %>% ungroup %>% drop_na() %>% 
     select(dir, path) %>% group_by(path, dir) %>% dplyr::summarise(n = dplyr::n())  %>% group_by(path) %>%
-    dplyr::mutate(percentage = n / sum(n) * 100) %>% filter(dir == "forward") %>% arrange(-percentage)  %>% pull(path)
+    dplyr::mutate(percentage = n / sum(n) * 100) %>% filter(dir == "backward") %>% arrange(-percentage)  %>% pull(path)
   
   p <- df_relations %>%
     drop_na() %>%
@@ -356,77 +337,30 @@ plot_relations <- function(df_relations){
     geom_bar(stat = "identity", position = "stack") +
     geom_text(aes(label = paste0(round(percentage), "%")), position = position_stack(vjust = 0.5), 
               size = 3, color = "black") +
-    scale_fill_manual(values = c("backward" = "#66C2A5", "simultaneous" = "#FDAE61", "forward" = "#E6F598"), 
-                      breaks = c("backward", "simultaneous", "forward")) +
+    scale_fill_manual(values = c("forward" = "#5cb032", "simultaneous" = "#f8ac32", "backward" = "#e73631"),
+                      breaks = c("forward", "simultaneous", "backward")) +
     theme_minimal() +
-    ggtitle("Distribution of direction of interaction by pathway (%)") +
-    labs(x = "percentage of direction of interaction", y = "path", fill="direction")
+    ggtitle("Distribution of appearance order of interaction by pathway (%)") +
+    labs(x = "percentage of appearance order of interaction", y = "pathway", fill="appearance order")
 
   print(p)
-} # figure ggplot-distributiondirection
-plot_distribirth <- function(df_genes){
-  # p <- df_genes %>% drop_na() %>% select(name, date) %>% unique() %>%
-  #   ggplot(., aes(x=factor(date, levels=1:25))) + geom_bar(position="stack") +
-  #   labs(x = "birth clade", y = "number of gene") + ggtitle("Distribution of birth gene") +
-  #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0)) +
-  #   scale_x_discrete(labels = date_clade$name, drop = FALSE)
-  
-  d <- df_genes %>% drop_na() %>% mutate(nwclade = case_when(
-    date %in% c(2, 3) ~ 2,
-    date %in% c(4, 5, 6) ~ 4,
-    date %in% c(7, 8) ~ 7,
-    date %in% c(12, 13) ~ 12,
-    date %in% c(18, 19, 20, 21, 22) ~ 18,
-    TRUE ~ date))
-  d$nwclade <- as.integer(d$nwclade)
-
-  new_date_clade <- data.frame(
-    num = c(1, 2, 4, 7, 9, 10, 11, 12, 14, 15, 16, 17, 18, 23, 24),
-    age = c(1300, 765, 743, 708, 635, 635, 570, 563, 462, 429, 415, 350, 330, 166, 98),
-    name = c("Opisthokonta", "Metazoa", "Eumetazoa", "Bilateria", "Deuterostomia", "Chordata",
-             "Olfactora", "Vetebrata", "Gnathostomata", "Osteichthyes", "Sarcopterygii", "Tetrapoda",
-             "Amniota", "Mammalia", "Theria")
-  )
-  new_date_clade$label <- paste(new_date_clade$name, " (", new_date_clade$age, "My)", sep = "")
-  p <- d %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>%
-    drop_na() %>% select(name, nwclade) %>% unique() %>%
-    ggplot(., aes(x=factor(nwclade))) + geom_bar(position="stack") +
-    labs(x = "branch of origin", y = "number of gene") + ggtitle("Distribution of gene") +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0)) +
-    scale_x_discrete(labels = new_date_clade$label, drop = FALSE)
-  print(p)  
-} #figure ggplot-distributionbirth #figure 3
+} # figure 4
 plot_cumuldistribirth <- function(df_genes){
-  d <- df_genes_allpaths %>% drop_na() %>% dplyr::mutate(nwclade = case_when(
-    date %in% c(2, 3) ~ 2,
-    date %in% c(4, 5, 6) ~ 4,
-    date %in% c(7, 8) ~ 7,
-    date %in% c(12, 13) ~ 12,
-    date %in% c(18, 19, 20, 21, 22) ~ 18,
-    TRUE ~ date))
-  d$nwclade <- as.integer(d$nwclade)
-  
-  new_date_clade <- data.frame(
-    num = c(1, 2, 4, 7, 9, 10, 11, 12, 14, 15, 16, 17, 18, 23, 24),
-    age = c(1300, 765, 743, 708, 635, 635, 570, 563, 462, 429, 415, 350, 330, 166, 98),
-    name = c("Opisthokonta", "Metazoa", "Eumetazoa", "Bilateria", "Deuterostomia", "Chordata",
-             "Olfactora", "Vetebrata", "Gnathostomata", "Osteichthyes", "Sarcopterygii", "Tetrapoda",
-             "Amniota", "Mammalia", "Theria")
-  )
-  new_date_clade$label <- paste(new_date_clade$name, " (", new_date_clade$age, "My)", sep = "")
-  
-  color_palette <- paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25)
-  p <- d %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>%
-    drop_na() %>% select(name, nwclade) %>% unique() %>% 
-    group_by(nwclade) %>%
+  color_palette <- paletteer_c("ggthemes::Sunset-Sunrise Diverging", 15)[1:13]
+  p <- df_genes %>% ungroup() %>% 
+    filter(!grepl(";", name), !grepl("cpd", name)) %>%
+    drop_na() %>% 
+    select(name, date) %>% 
+    unique() %>% 
+    group_by(date) %>%
     dplyr::summarise(count_gene = dplyr::n()) %>%
-    arrange(nwclade) %>%
+    arrange(date) %>%
     dplyr::mutate(
       cumulative_count = cumsum(count_gene),
       cumulative_percentage = cumsum(count_gene) / sum(count_gene) * 100
     ) %>%
-    ggplot(aes(x = factor(nwclade))) +
-    geom_bar(aes(y = cumulative_count, fill = nwclade), stat = "identity") +
+    ggplot(aes(x = factor(date))) +
+    geom_bar(aes(y = cumulative_count, fill = date), stat = "identity") +
     geom_text(
       aes(y = cumulative_count, label = paste0(round(cumulative_percentage, 1), "%")),
       vjust = -0.5, size = 3, color = "black"
@@ -437,68 +371,68 @@ plot_cumuldistribirth <- function(df_genes){
       vjust = -0.5, size = 3, color = "black"
     ) +
     labs(
-      x = "branch of origin", 
+      x = "age rank of appearance", 
       y = "number of gene / cumulative percentage of gene", 
-      title = "Distribution of birth gene (cumulative percentage and raw data)"
+      title = "Distribution of gene (cumulative percentage and raw data)"
     ) +
     scale_fill_gradientn(colours = color_palette, name = "Ajout", guide = "none") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0)) +
-    scale_x_discrete(labels = new_date_clade$label, drop = FALSE)
-  
-  # p <- d %>% drop_na() %>% select(name, nwclade) %>% unique() %>%
-  #   group_by(nwclade) %>% summarise(count = n()) %>% arrange(nwclade) %>%
-  #   mutate(cumulative_count = cumsum(count), 
-  #          cumult_perc = cumsum(count)/sum(count)*100,
-  #          diff_count = cumulative_count - lag(cumulative_count, default = 0)) %>% 
-  #   ggplot(., aes(x = factor(nwclade), y = cumulative_count, fill = diff_count)) +
-  #   geom_bar(stat = "identity") +
-  #   geom_text(aes(label = ifelse(diff_count > 0, paste("+", round(diff_count,2), "%"), "")),
-  #             vjust = -0.5, size = 3, color = "black") +
-  #   scale_fill_gradientn(colours = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), name = "Ajout") +
-  #   labs(x = "birth clade", y = "number of gene", 
-  #        title = "Cumulative distribution of birth gene") +
-  #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0))+
-  #   scale_x_discrete(labels = new_date_clade$label, drop = FALSE)
+    scale_x_discrete(labels = date_clade$label, drop = TRUE)
   print(p)  
-}
+} # figure 3
 plot_delta <- function(df_relations){
   p_delta <- df_relations %>% drop_na() %>% select(delta_age, pos_from, pos_to, path) %>% 
     group_by(path, pos_from, pos_to) %>% unique() %>% dplyr::count(delta_age)
   p_median_delta <- p_delta %>% group_by(path) %>% dplyr::summarise(median = median(delta_age)) %>% arrange(median) %>% pull(path)
   p_delta <- p_delta %>% dplyr::mutate(path = factor(path, levels=p_median_delta))
   p <- p_delta %>% ggplot(.,  aes(x = delta_age, y = path)) +
-    geom_boxplot() + labs(x = "delta", y = "path") +
-    ggtitle("Distribution des deltas par path") +
+    geom_boxplot() + labs(x = "age rank difference (delta)", y = "pathway") +
+    ggtitle("Distribution of age rank difference by pathway") +
     scale_x_continuous(breaks = seq(-25, 25, by = 5)) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "red")
   plot(p)
-  tab_plot <- layer_data(p) %>% select(xmin, xlower, xmiddle, xupper, xmax) 
+  tab_plot <- layer_data(p) %>% select(xmin, xlower, xmiddle, xupper, xmax)
   tab_plot$path <- rep(p_median_delta, length.out = nrow(tab_plot))
   return(tab_plot)
-} #figure ggplot-distributiondelta
+} # figure suppl1
+plot_birth <- function(df_genes){
+  p_birth <- df_genes %>% ungroup() %>% drop_na() %>% select(name, date, path) %>% 
+    group_by(path) %>% unique() %>% dplyr::count(date)
+  p_median_birth <- p_birth %>% group_by(path) %>% dplyr::summarise(median = median(date)) %>% arrange(median) %>% pull(path)
+  p_birth <- p_birth %>% dplyr::mutate(path = factor(path, levels=p_median_birth))
+  p <- p_birth %>% ggplot(.,  aes(x = date, y = path)) +
+    geom_boxplot() + labs(x = "age rank of appearance", y = "pathway") +
+    ggtitle("Distribution of age rank of appearance by pathway") +
+    scale_x_continuous(breaks = seq(-15, 15, by = 2.5))
+  plot(p)
+  tab_plot <- layer_data(p) %>% select(xmin, xlower, xmiddle, xupper, xmax, xmin_final, xmax_final)
+  tab_plot$path <- rep(p_median_birth, length.out = nrow(tab_plot))
+  return(tab_plot)
+}
 plot_distrirankbirth <- function(df_genes){
   order_correlation <- df_correlation %>% filter(pvalue<0.05) %>% arrange(r_correlation, path) %>% rbind(., df_correlation %>% filter(pvalue>=0.05) %>% arrange(r_correlation, path))
-  p <- df_genes %>% drop_na() %>% mutate(path = factor(path, levels = order_correlation$path)) %>% ggplot(., aes(y = "",  fill = factor(date, levels=1:25))) +
+  p <- df_genes %>% drop_na() %>% mutate(path = factor(path, levels = order_correlation$path)) %>% ggplot(., aes(y = "",  fill = factor(date, levels=1:15))) +
     geom_bar(position = "fill") +
-    scale_fill_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), drop = FALSE) +
+    scale_fill_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 15), drop = FALSE) +
     coord_cartesian() +
     theme_void() +
     facet_grid(path ~ pos, switch = "both") +
     theme(strip.text.y.left = element_text(angle = 0, hjust = 1, vjust = 0)) +
-    labs(x = "path", y = "pathway position", fill = "branch of origin") +
-    ggtitle("Distribution of branch of origin by path and pathway position")
+    labs(x = "path", y = "pathway position", fill = "age rank of appearance") +
+    ggtitle("Distribution of age rank of appearance by pathway and pathway position")
   print(p)
 } #figure ggplot-distributionbirthrank
 plot_distribirthdelta <- function(df_relations, name_path){
-  p <- df_relations %>% drop_na() %>% group_by(path) %>% unique() %>% mutate(label = paste(date_from,":", date_to, sep = "")) %>% 
-    group_by(delta_age, label, date_from, date_to) %>% filter(path==name_path) %>% summarise(freq=n()) %>% 
-    ggplot(., aes(delta_age, freq, fill = factor(date_from, levels=1:25))) +
+  p <- df_relations %>% drop_na() %>% dplyr::group_by(path) %>% unique() %>% dplyr::mutate(label = paste(date_from,":", date_to, sep = "")) %>% 
+    dplyr::group_by(delta_age, label, date_from, date_to) %>% dplyr::filter(path==name_path) %>% dplyr::summarise(freq=dplyr::n()) %>% 
+    ggplot(., aes(delta_age, freq, fill = factor(date_from, levels=1:15))) +
     geom_bar(position = "stack", stat = "identity") + theme_minimal() +
-    scale_fill_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), drop = FALSE) + 
-    labs(x = "delta", y = "distribution of branch of origin", fill = "branch of origin") +
-    ggtitle(paste("Distribution of branch of origin by delta for", name_path))
-  print(p)
-} #figure ggplot-distridelta
+    scale_fill_manual(values = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 15), drop = FALSE) + 
+    labs(x = "delta", y = "distribution of age rank appearance", fill = "age rank of appearance") +
+    ggtitle(paste("Distribution of age rank of appearance by delta for", name_path))
+  plot(p, main = paste("figure", name_path))
+  # print(p)
+} #figure suppl2
 
 
 #### FILES ####
@@ -511,21 +445,29 @@ files_paths <- dir(doss_paths) # récupère tous les fichiers d'un dossier
 
 
 #### INITIALISATION ####
+load("/home/fpicolo/Desktop/Pathways/birth-animals/2024/session_16012025.RData")
+
 npermut = 1000
+# les conditions : backward ou simult, backward(A plus jeune que B), simult, forward (A plus vieux que B), forward ou simult
 conditions <- c(function(x){x[1]>=x[2]}, function(x){x[1]>x[2]}, function(x){x[1]==x[2]}, function(x){x[1]<x[2]}, function(x){x[1]<=x[2]})
 df_pvalue = data.frame(matrix(NA, nrow = length(files_paths), ncol = 1+length(conditions)*3))
+df_fbs = data.frame(matrix(NA, nrow = length(files_paths), ncol = 1+length(conditions[2:4])*3))
 df_relations_allpaths <- data.frame(matrix(NA, nrow = 0, ncol = 12))
 df_relations_allpaths_permutees <- data.frame(matrix(NA, nrow = 0, ncol = 12))
 df_genes_allpaths <- data.frame(matrix(NA, nrow = 0, ncol = 7))
 df_correlation <- data.frame(matrix(NA, nrow = length(files_paths), ncol = 3))
-date_clade <- data.frame(num = 1:25,
-                         name = c("Yeast", "Porifera", "Placozoa", "Ctenophora", "Cnidaria", "Xenacoelomorpha", "Spiralia",
-                                  "Ecdysozoa", "Echinodermata", "Cephalochordata", "Tunicata", "Petromyzontidae", "Myxini",
-                                  "Chondrichthyes", "Actinopterygii", "Coelacanthidae", "Amphibia", "Testudines", "Aves",
-                                  "Crocodylia", "Squamata", "Sphenodontia", "Prototheria", "Eutheria", "Metatheria"),
-                         age = c(1110, 725, 550, 109, 588, 550, 610, 446, 596, 520, 446, 416, 360, 413, 396, 350, 319, 194,
-                                 109, 87, 189, 200, 166, 98, 66))
-palette <- tibble(color = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 25), clade=1:25)
+df_distri_fbs <- data.frame(matrix(NA, nrow = 0, ncol = 3)) %>% setNames(c("backward", "simultaneous", "forward"))
+palette <- tibble(color = paletteer_c("ggthemes::Sunset-Sunrise Diverging", 15), clade=1:15)
+
+date_clade <- data.frame(
+  num = 1:15,
+  age = c(1300, 765, 743, 708, 635, 558, 570, 563, 462, 429, 415, 350, 330, 166, 98),
+  name = c("Opisthokonta", "Metazoa", "Eumetazoa", "Bilateria", "Deuterostomia", "Chordata",
+           "Olfactora", "Vetebrata", "Gnathostomata", "Osteichthyes", "Sarcopterygii", "Tetrapoda",
+           "Amniota", "Mammalia", "Theria"),
+  label = paste(date_clade$name, " (", date_clade$age, "My)", sep = "")
+)
+
 
 #### PROGRAMM ####
 for(i in 1:length(files_paths)){
@@ -533,6 +475,7 @@ for(i in 1:length(files_paths)){
   xml_path <- xmlRoot(class_path) # le fichier xml interprété par R
   list_result <- recup_networks(fxml = xml_path) # on sépare la voie en plusieurs informations dans des tableaux
   GRN <- list_result[[1]]; name_path <- list_result[[2]]
+  distri_fbs <- data.frame(matrix(NA, nrow = 0, ncol = 3)) %>% setNames(c("forward", "simultaneous", "backward"))
   
   print(paste("###", i, name_path, "###", sep=" "))
   
@@ -565,26 +508,41 @@ for(i in 1:length(files_paths)){
   df_meancluster = data.frame(matrix(NA, nrow = npermut, ncol = length(conditions)))
   progressbar <- txtProgressBar(min = 0, max = npermut, style = 3)
   for (n in 1:npermut){
-    # tempGRN <- permutation(GRN = GRN, var = "relations") # "relation"/"times" possible aussi
-    tempGRN <- permutation(GRN = GRN, var = "times")
+    tempGRN <- permutation(GRN = GRN, var = "times") # "relation"/"times" possible aussi
     # visual_graph(tempGRN) 
     for (indx_cond in 1:length(conditions)){
       cond = conditions[[indx_cond]]
       df_meancluster[n, indx_cond] = subgraphs_given_times_condition(GRN = tempGRN, condition = cond)
     }
-    if(n %% 100 == 0){setTxtProgressBar(progressbar, n)}
+
+    # on se prépare un petit jeu de data permutée
+    df_relations_allinfos_permutees <- df_relations_allinfos %>% select(-date_from, -date_to, -delta_age, -direction) %>% 
+      left_join(tempGRN$items %>% select(ids, times), by = c("from" = "ids")) %>% dplyr::rename(date_from = times) %>% 
+      left_join(tempGRN$items %>% select(ids, times), by = c("to" = "ids")) %>% dplyr::rename(date_to = times) %>% 
+      mutate(delta_age = date_to - date_from, direction = ifelse(delta_age>0, "forward", ifelse(delta_age<0, "backward", "simultaneous"))) %>%
+      select(from, to, name_from, name_to, pos_from, pos_to, date_from, date_to, delta_age, direction, weights, path)
+    fbs <- df_relations_allinfos_permutees %>% ungroup() %>% drop_na() %>% select(direction) %>% group_by(direction) %>% count() %>% 
+      full_join(data.frame(direction = c("backward", "simultaneous", "forward"), join_by = "direction")) %>%
+      mutate(n = ifelse(is.na(n), 0, n)) %>% 
+      pivot_wider(., names_from = direction, values_from = n) %>% select(backward, simultaneous, forward)
+    distri_fbs <- rbind(distri_fbs, fbs)
+    
+    setTxtProgressBar(progressbar, n)
   }
   close(progressbar)
   
-  # on se prépare un petit jeu de data permutées
-  df_relations_permutees <- get_subgraph(tempGRN) %>% mutate(path = name_path)
-  df_relations_allinfos_permutees <- df_relations_permutees %>% dplyr::rename(pos_from = positions) %>% mutate(pos_to = pos_from +1) %>% 
-    left_join(GRN$items, by = c("from" = "ids")) %>% dplyr::rename(date_from = times, name_from = gene_name) %>% 
-    left_join(GRN$items, by = c("to" = "ids")) %>% dplyr::rename(date_to = times, name_to = gene_name) %>% 
-    select(from, to, name_from, name_to, pos_from, pos_to, date_from, date_to, delta_age, direction, weights, path)
-  df_relations_allpaths_permutees <- rbind(df_relations_allpaths_permutees, df_relations_allinfos_permutees)
-  
-  # maintenant on va comparer les données brutes aux données permutées
+  ## et là on va comparer fbs aux permutés
+  df_fbs[i, 1] = name_path
+  for (indx_cond in 1:length(conditions[2:4])){ # pour ne prendre que les conditions strictes
+    df_brute_fbs <- df_relations_allinfos %>% ungroup() %>% drop_na() %>% # mettre dans le bon sens
+      dplyr::select(direction, path) %>% group_by(path, direction) %>% dplyr::summarise(n = dplyr::n())  %>% group_by(path) %>% 
+      pivot_wider(names_from = direction, values_from = n) %>% select(path, backward, simultaneous, forward) %>% filter(path == name_path) 
+    result_fbs <- pvalue_comp(x = df_brute_fbs[indx_cond+1][[1]], distrib = as.list(distri_fbs[,indx_cond])[[1]], tail = "two")
+    df_fbs[i, (1+indx_cond*3)-2] = result_fbs[[1]]; df_fbs[i, (1+indx_cond*3)-1] = result_fbs[[3]]; df_fbs[i, 1+indx_cond*3] = result_fbs[[2]]
+  }
+  df_distri_fbs <- rbind(df_distri_fbs, t(colMeans(distri_fbs, na.rm = TRUE)))
+    
+  # # maintenant on va comparer les données brutes aux données permutées
   df_pvalue[i, 1] = name_path
   for (indx_cond in 1:length(conditions)){
     result_comp <- pvalue_comp(x=meancluster[indx_cond], distri=df_meancluster[,indx_cond], tail = "two")
@@ -597,23 +555,63 @@ for(i in 1:length(files_paths)){
   df_to <- df_relations_allinfos %>% ungroup() %>%
     select(to, name_to, pos_to, date_to) %>%
     dplyr::rename(ids = to, name = name_to, pos = pos_to, date = date_to)
-  df_genes <- bind_rows(df_from, df_to) %>% distinct() %>% 
+  df_genes <- bind_rows(df_from, df_to) %>% distinct() %>%
     select(-contains("delta"), -contains("direction"), -contains("weights")) %>%
     left_join(df_degrees, by=c("ids"="ids")) %>% mutate(path = name_path)
   df_genes_allpaths <- rbind(df_genes_allpaths, df_genes)
 }
 
 # on remet bien les noms des colonnes parce qu'il peut y avoir eu des pertes avec rbind()
-names(df_pvalue) <- c("path", "forsimult", "forsimult_sizeeffect", "p_forsimult", "forstrict", 
-                      "for_sizeeffect", "p_forstrict", "simult", "simult_sizeeffect", "p_simult", "backstrict", "back_sizeeffect",
-                      "p_backstrict", "backsimult", "backsimult_sizeeffect","p_backsimult")
+names(df_pvalue) <- c("path", "backsimult", "backsimult_sizeeffect", "p_backsimult", "backstrict", 
+                      "back_sizeeffect", "p_backstrict", "simult", "simult_sizeeffect", "p_simult", "forstrict", "for_sizeeffect",
+                      "p_forstrict", "forsimult", "forsimult_sizeeffect","p_forsimult")
 names(df_correlation) <- c("path", "r_correlation", "pvalue")
+names(df_fbs) <- c("path", "backward_signe", "backward_sizeeffect", "p_backward", "simult_signe", 
+                   "simult_sizeeffect", "p_simult", "forward_signe", "forward_sizeeffect", "p_forward")
 df_correlation$r_correlation = as.numeric(df_correlation$r_correlation)
 df_correlation$pvalue = as.numeric(df_correlation$pvalue)
 
 
 #### SAUVEGARDE ####
-# save.image("session.RData")
+save.image("/home/fpicolo/Desktop/Pathways/birth-animals/2024/session_16012025.RData")
+
+
+#### INFOS VOIES ####
+## reparer les problèmes de mismatch
+df_diff_genes <- df_genes_allpaths %>% drop_na() %>% group_by(name) %>% dplyr::summarise(n_date = n_distinct(date)) %>% 
+  filter(n_date > 1) %>% ungroup()
+df_genes_diff <- df_genes_allpaths %>% semi_join(df_diff_genes, by = "name") %>% 
+  ungroup() %>% select(name, date, path) %>% arrange(name)
+df_dates_mode <- df_genes_allpaths %>% group_by(name) %>%
+  dplyr::summarise(date_mode = min(date), .groups = "drop")
+df_dates_with_modes <- df_genes_allpaths %>% left_join(df_dates_mode, by = "name") %>% 
+  select(-date) %>% dplyr::rename(date = date_mode)
+df_genes_allpaths <- df_dates_with_modes
+# permet d'identifier les problèmes de direction : 
+df_diff_directions <- df_relations_allpaths %>% drop_na() %>%
+  group_by(name_from, name_to) %>% dplyr::summarise(n_directions = n_distinct(direction)) %>%
+  filter(n_directions > 1) %>% ungroup()
+df_relations_diff <- df_relations_allpaths %>% semi_join(df_diff_directions, by = c("name_from", "name_to")) %>% 
+  ungroup() %>% select(name_from, name_to, date_from, date_to, delta_age, direction, path) %>% arrange(name_from)
+
+## réparer les bêtises pour les mauvaises directions le temps de voir ce qui ne fonctionne pas avant
+df_mode_dates <- df_relations_allpaths %>% group_by(name_from, name_to) %>%
+  dplyr::summarise(date_from_mode = min(date_from), date_to_mode = calc_mode(date_to), .groups = 'drop')
+df_relations_with_modes <- df_relations_allpaths %>% left_join(df_mode_dates, by = c("name_from", "name_to")) %>% 
+  select(-date_from, -date_to, -direction, -delta_age) %>% rename(date_from = date_from_mode, date_to = date_to_mode) %>% 
+  mutate(delta_age = date_to-date_from, 
+         direction = ifelse(delta_age<0, "backward", ifelse(delta_age>0, "forward", "simultaneous")))
+
+## puis remplacer les p_sum_dir et t_sum_dir. 
+df_relations_allpaths <- df_relations_with_modes
+
+
+# compter le nombre d'interaction par voies
+df_nbinteraction <- df_relations_allpaths %>% ungroup() %>% drop_na() %>% group_by(path) %>% count() %>% rename(nb_interactions = n)
+# compter le nombre de gènes par voies
+df_nbgenes <- df_genes_allpaths %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>% drop_na() %>% group_by(path) %>% count() %>% rename(nb_genes = n)
+# compter le nombre de gènes + groupes par voies
+df_genes_allpaths %>% ungroup() %>% drop_na() %>% group_by(path) %>% count()
 
 #### INFOS GENES ####
 # somme des genes par clades pour l'ensemble des voies # infos avec figure 3
@@ -632,10 +630,26 @@ chi2_immune <- df_genes_allpaths %>% ungroup() %>% filter(!grepl(";", name), !gr
   xtabs(n ~ immune + vertebrate, .) %>% chisq.test(.)
 ## peut encore être améliorer ?? là plusieurs voies qui sont immune et non sont comptées 2 fois.
 
-# Couleurs pour KEGG
-df_color <- df_genes_allpaths %>% mutate(color = palette$color[match(date, palette$clade)], 
-                                         kegg_id = sapply(GRN$items$names[match(ids, ids)], extract_first_element))
 
+## Couleurs pour KEGG
+df_recup <- data.frame(matrix(NA, nrow = 0, ncol = 7))
+for(i in 1:length(files_paths)){
+  class_path <- xmlParse(paste(doss_paths, files_paths[[i]], sep=""))
+  xml_path <- xmlRoot(class_path) # le fichier xml interprété par R
+  list_result <- recup_networks(fxml = xml_path) # on sépare la voie en plusieurs informations dans des tableaux
+  GRN <- list_result[[1]]; name_path <- list_result[[2]]
+  
+  print(paste("###", i, name_path, "###", sep=" "))
+  
+  GRN <- set_ages(GRN = GRN) # on associe les âges aux gènes (si paralogues : le plus ancien, si groupe : le plus récent)
+  GRN <- set_names(GRN = GRN) # on ajoute les noms des gènes pour plus tard la méga voie
+  subdata <- df_genes_allpaths %>% filter(path == name_path) %>% 
+    mutate(color = palette$color[match(date,palette$clade)],
+           kegg_id = ifelse(!grepl(";", name), sapply(GRN$items$names[match(ids, GRN$items$ids)], extract_first_element), name)) %>%
+    drop_na()
+  df_recup <- rbind(df_recup, subdata)
+}
+write.table(df_recup, "df_color.csv", sep = ";", row.names = FALSE)
 
 #### INFOS RELATIONS ####
 ## Direction (forward, backward, simultaneous)
@@ -645,64 +659,81 @@ p_sum_direction <- df_relations_allpaths %>% ungroup %>% drop_na() %>% group_by(
 # somme des directions toute voie confondue
 t_sum_direction <- df_relations_allpaths %>% ungroup() %>% drop_na() %>% select(name_from, name_to, direction) %>% 
   unique() %>% dplyr::count(direction) %>% pivot_wider(names_from = direction, values_from = n)
-
-# permet d'identifier les problèmes de direction : 
-df_diff_directions <- df_relations_allpaths %>% drop_na() %>%
-  group_by(name_from, name_to) %>% dplyr::summarise(n_directions = n_distinct(direction)) %>%
-  filter(n_directions > 1) %>% ungroup()
-df_relations_diff <- df_relations_allpaths %>% semi_join(df_diff_directions, by = c("name_from", "name_to")) %>% 
-  ungroup() %>% select(name_from, name_to, date_from, date_to, delta_age, direction, path) %>% arrange(name_from)
-
-## réparer les bêtises pour les mauvaises directions le temps de voir ce qui ne fonctionne pas avant
-calc_mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-df_mode_dates <- df_relations_allpaths %>% group_by(name_from, name_to) %>%
-  summarise(date_from_mode = calc_mode(date_from), date_to_mode = calc_mode(date_to), .groups = 'drop')
-df_relations_with_modes <- df_relations_allpaths %>% left_join(df_mode_dates, by = c("name_from", "name_to")) %>% 
-  select(-date_from, -date_to, -direction, -delta_age) %>% rename(date_from = date_from_mode, date_to = date_to_mode) %>% 
-  mutate(delta_age = date_from-date_to, 
-         direction = ifelse(delta_age>0, "forward", ifelse(delta_age<0, "backward", "simultaneous")))
-
-## puis remplacer les p_sum_dir et t_sum_dir. 
-df_relations_allpaths <- df_relations_with_modes
-# ici il faudra faire un chisq.test() entre les % des directions brute et celles des permutées. 
+# compter les % de for/back/simul par voies
+df_perc_fbs <- df_relations_allpaths %>% ungroup() %>% drop_na() %>% 
+  dplyr::select(direction, path) %>% group_by(path, direction) %>% dplyr::summarise(n = dplyr::n())  %>% group_by(path) %>%
+  dplyr::mutate(percentage = n / sum(n) * 100) %>% select(-n) %>% 
+  pivot_wider(names_from = direction, values_from = percentage)
 
 
 ## Delta
-# petites recherches pour les deltas
+# # petites recherches pour les deltas
 df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% dplyr::mutate(label = paste(date_from,":", date_to, sep = "")) %>%
-  group_by(delta_age, label, date_from, date_to) %>% filter(path=="MAPK") %>% dplyr::summarise(freq=dplyr::n()) %>% filter(delta_age==0)
-# somme de chaque delta
-df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% dplyr::mutate(label = paste(date_from,":", date_to, sep = "")) %>% 
-  group_by(delta_age, label, date_from, date_to) %>% filter(path=="MAPK") %>% dplyr::count(delta_age)
-
-## Permutations
-# on va regarder si les tailles des clusters respectant une condition sont du à l'aléatoire ou non : 
-df_pvalue %>% filter(p_forsimult <0.05) %>% select(path, p_forsimult, forsimult) %>% arrange(forsimult)
-df_pvalue %>% filter(p_forstrict <0.05) %>% select(path, p_forstrict, forstrict) %>% arrange(forstrict)
-df_pvalue %>% filter(p_simult <0.05) %>% select(path, p_simult, simult) %>% arrange(simult)
-df_pvalue %>% filter(p_backstrict <0.05) %>% select(path, p_backstrict, backstrict) %>% arrange(backstrict)
-df_pvalue %>% filter(p_backsimult <0.05) %>% select(path, p_backsimult, backsimult) %>% arrange(backsimult)
-
-
+   group_by(delta_age, label, date_from, date_to) %>% filter(path=="Hippo") %>% dplyr::summarise(freq=dplyr::n()) %>% filter(delta_age==0)
+# # somme de chaque delta
+df_relations_allpaths %>% drop_na() %>% group_by(path) %>% unique() %>% dplyr::mutate(label = paste(date_from,":", date_to, sep = "")) %>%
+   group_by(delta_age, label, date_from, date_to) %>% filter(path=="Hippo") %>% dplyr::count(delta_age)
+# # compter le nombre d'interactions / type de delta
+df_relations_allpaths %>% filter(path=="Hippo") %>% dplyr::mutate(label = paste(date_from, ":", date_to, sep="")) %>% group_by(delta_age) %>%
+   dplyr::count(delta_age) %>% drop_na()
 
 
 #### PLOTS ####
-plot_relations(df_relations = df_relations_allpaths) #figure4
-plot_distribirth(df_genes = df_genes_allpaths) #figure3
-plot_cumuldistribirth(df_genes = df_genes_allpaths) # new figure 3 ??? 
-plot_delta(df_relations = df_relations_allpaths) #figure5
-plot_distrirankbirth(df_genes = df_genes_allpaths) #figure7
-
+pdf("figure3-16012025.pdf", width = 10, height = 7)
+plot_cumuldistribirth(df_genes = df_genes_allpaths)       # figure 3 
+dev.off()
+pdf("figure4-16012025.pdf", width = 10, height = 7)
+plot_relations(df_relations = df_relations_allpaths)      # figure 4
+dev.off()
+pdf("figure5-16012025.pdf", width = 10, height = 7.8)
+plot_distrirankbirth(df_genes = df_genes_allpaths)        # figure5
+dev.off()
+pdf("suppldata1-16012025.pdf", width = 10, height = 7)
+p <- plot_delta(df_relations = df_relations_allpaths)     # suppl 1
+dev.off()
 list_path = unique(df_relations_allpaths$path)
+pdf("suppldata2-16012025.pdf")                            # suppl 2
 for(voie in list_path){
-  # il faut les sauvegarder
-  plot_posids(df_genes = df_genes_allpaths, name_path = voie) 
   plot_distribirthdelta(df_relations = df_relations_allpaths, name_path = voie)
 }
+dev.off()
 
+names(p)[1:5] <- c("delta_min", "delta_Q1", "delta_med", "delta_Q3", "delta_max")
+p
+q <- plot_birth(df_genes = df_genes_allpaths)             # infos suppl 4
+q$range <- paste("[", q$xmin_final, ";", q$xmax_final, "]", sep = "")
+q <- q[, !(names(q) %in% c("xmin_final", "xmax_final"))]
+names(q)[1:7] <- c("birth_min", "birth_Q1", "birth_med", "birth_Q3", "birth_max", "path", "birth_range")
+q
+
+
+### tableau suppl 4 
+merged_table <- merge(df_nbinteraction, df_nbgenes, by = "path")
+merged_table <- merge(merged_table, p_sum_direction, by = "path")
+merged_table <- left_join(merged_table, q, by = "path")
+merged_table <- merge(merged_table, df_correlation, by = "path")
+merged_table <- merge(merged_table, p, by = "path")
+merged_table <- merge(merged_table, df_pvalue, by = "path")
+factorsvoies <-read.csv(file.choose(),sep=";") ## le fichier est dans 2024, factor
+merged_table <- merge(merged_table, factorsvoies, by = "path") 
+merged_table <- merge(merged_table, df_fbs, by = "path")
+write.table(merged_table, "suppldata4-16012025.csv", row.names = FALSE, sep = ";")
+
+###### KO ######
+### Pour aller regarder les KO 
+list_hasard_path <- merged_table %>% filter(chi2_pv > 0.05 & pvalue > 0.05 & p_forstrict > 0.05 & p_forsimult > 0.05 & p_simult > 0.05 & p_backstrict > 0.05 & p_backsimult > 0.05) %>% .$path
+tab_hasard <- df_genes_allpaths %>% ungroup() %>% filter(!grepl(";", name), !grepl("cpd", name)) %>% drop_na() %>% select(name, date, path) %>% 
+  dplyr::mutate(hasard = ifelse(path %in% list_hasard_path, "yes", "no"))
+# liste des gènes qui sont dans des voies hasards et dans des voies pas hasard ! 
+tab_mixte <- tab_hasard %>% group_by(name) %>% summarise(hasard_yes = any(hasard == "yes"), hasard_no = any(hasard == "no")) %>% ungroup() %>% 
+  filter(hasard_yes & hasard_no) # %>% select(name)
+# liste des gènes qui sont uniquement dans des voies hasards
+tab_fullH <- tab_hasard %>% group_by(name) %>% summarise(hasard_yes = any(hasard == "yes"), hasard_no = any(hasard == "no")) %>% ungroup() %>% 
+  filter(hasard_yes == TRUE & hasard_no == FALSE)
+# liste des gènes qui sont uniquement dans des voies nécessité
+tab_fullN <- tab_hasard %>% group_by(name) %>% summarise(hasard_yes = any(hasard == "yes"), hasard_no = any(hasard == "no")) %>% ungroup() %>% 
+  filter(hasard_yes == FALSE & hasard_no == TRUE)
+tab_hasard %>% filter(name == "WAS")
 
 
 
